@@ -4,23 +4,23 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://www.noticiasrcn.com/';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotRCN.txt';
+    $URL = 'http://www.semana.com/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotElTiempo.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.noticiasrcn.com/');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.semana.com/');
         
-        $pattern = '/\<div class\=\"content\-bloque ultimas\-noticias\-bloque\"\>(.*?)\<\/div\>\<\!\-\- \/\.block \-\-\>/si';
+        $pattern = '/\<div class\=\"row articles\"\>(.*?)\<div class\=\"panel widget opinion\"\>/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
             break;
     }
     
-    $patron = '/(?<=\<div class\=\"field\-content\"\>\<a href\=\")[^\"]+/si';
+    $patron = '/(?<=\<h3 class\=\"meta\"\>\<a href\=\")[^\"]+/si';
     preg_match_all($patron, $noticias[0], $urlNoticias);
             
     $cont = 1;
@@ -29,10 +29,11 @@ set_time_limit (90);
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-        $urlNoticia = 'http://www.noticiasrcn.com' . $urlNoticia;
+        $urlNoticia = 'http://www.semana.com' . $urlNoticia;
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
+            echo $urlNoticia;
             agregaNoticia($urlNoticia, '', $agentBrowser, $BOT_BROWSER_COOKIES, $URL);
             break;
         }
@@ -54,23 +55,22 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<div id\=\"contenido\"\>(.*?)\<div id\=\"enlaces\-relacionados\-noticias\"\>/si';
+        $patron = '/\<div class\=\"item\-text\" itemprop\=\"articleBody\"\>(.*?)\<\!\-\- Noticias Relacionad\<as \-\-\>/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/.com\/.*\//si';
-        preg_match($patron, $urlNoticia, $categoriaNoticia);
+        $patron = '/activeSection\(\"(.*?)\"\)\;/si';
+        preg_match($patron, $htmlResultPage, $categoriaNoticia);
         print_r($categoriaNoticia);
 
-        $categoriaNoticia = asignaCategoria($categoriaNoticia[0]);
+        $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
         
-        // $categoriaNoticia = 1;
+        //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('| Noticias RCN', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
-
+        $tituloNoticia = str_replace('- Semana.com', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
         
@@ -94,20 +94,20 @@ set_time_limit (90);
         //  exit;
 
         
-        $pattern = '/\<div id\=\"tipo-imagen\"\>(.*?)\<div class\=\"foto\-desc\"\>/si';
+        $pattern = '/\<div class\=\"carousel\"\>(.*?)\<\/div\>/si';
         preg_match($pattern, $htmlResultPage, $imagenes);
         
         if($imagenes){  
-            $pattern = '/(?<=\<img typeof\=\"foaf\:Image\" src\=\")[^\"]+/';
+            $pattern = '/(?<=class\=\"article\-image\" src\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia;
-        echo "Titulo " . $tituloNoticia;
+        echo "Url: " . $urlNoticia . "\n";
+        echo "Titulo " . $tituloNoticia . "\n";
         echo "Categoria: ";
         echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile;
-        echo "Contenido: " . $contenidoNoticia;
+        echo "nombFile: " . $nombFile . "\n";
+        echo "Contenido: " . $contenidoNoticia . "\n";
         echo "Imagenes ";
         print_r($imagenes);
         /*
@@ -200,7 +200,7 @@ set_time_limit (90);
     
     function asignaCategoria($stringCategoria)
     {
-        $patron = '/nacional|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|COLOMBIA/';
+        $patron = '/NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|COLOMBIA/';
         preg_match($patron, $stringCategoria, $categoria);
         if($categoria)
             $categoria = '1';
@@ -212,7 +212,7 @@ set_time_limit (90);
                 $categoria = '3';
             else
             {
-                $patron = '/internacional|mundo|Mundo|MUNDO/';
+                $patron = '/EUROPA|internacional|mundo|Mundo|MUNDO/';
                 preg_match($patron, $stringCategoria, $categoria);
                 if($categoria)
                     $categoria = '4';
