@@ -66,7 +66,7 @@ set_time_limit (90);
 
    		$categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
 		
-		$categoriaNoticia = 1;
+		//$categoriaNoticia = 1;
 		
 		$tituloNoticia = str_replace('- ELTIEMPO.COM', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
 		$tituloNoticia = preg_replace('/-.*/ ', '', trim(htmlspecialchars_decode($tituloNoticia)));
@@ -175,7 +175,7 @@ set_time_limit (90);
 			$fields .= $key . '=' . $value . '&'; 
 		}
 		rtrim($fields, '&');
-		
+		/*
 		$ch = curl_init(); 
 		curl_setopt($ch, CURLOPT_URL, 'http://noticiasvenezolanas.co.ve/phpBots/botServer.php'); 
 		curl_setopt($ch, CURLOPT_POST, TRUE);
@@ -212,7 +212,7 @@ set_time_limit (90);
 				$categoria = '3';
 			else
 			{
-				$patron = '/internacional|mundo|Mundo|MUNDO/';
+				$patron = '/EUROPA|internacional|mundo|Mundo|MUNDO/';
 				preg_match($patron, $stringCategoria, $categoria);
 				if($categoria)
 					$categoria = '4';
