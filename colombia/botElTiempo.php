@@ -56,8 +56,6 @@ set_time_limit (90);
 		
 		$patron = '/\<div id\=\"contenido\"\>(.*?)\<footer class\=\"footer-article\"\>/si';
    		preg_match($patron, $htmlResultPage, $contenidoNoticia);
-   		echo "Contenido: ";
-   		print_r($contenidoNoticia);
 		
 		$fechaNoticia = date("Y-m-d");
 		$horaNoticia = date("h:i A");
@@ -65,17 +63,19 @@ set_time_limit (90);
 		
 		$patron = '/\<h3 itemprop\=\"articleSection\"\>(.*?)\<\/h3\>/si';
    		preg_match($patron, $htmlResultPage, $categoriaNoticia);
-   		echo "Categoria: ";
-   		print_r($categoriaNoticia);
-		/*
+
+   		$categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
+		
 		$categoriaNoticia = 1;
 		
-		$tituloNoticia = str_replace('| AVN', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+		$tituloNoticia = str_replace('- ELTIEMPO.COM', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+		$tituloNoticia = preg_replace('/-.*/ ', '', trim(htmlspecialchars_decode($tituloNoticia)));
 
+		
 		$nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
 		
-		$patron = '/contenidoVnota\" class\=\"txtVitrina\"\>(.*?)\<div id\=\"clearposition\"/si';
-   		preg_match($patron, $htmlResultPage, $contenidoNoticia2);
+		// $patron = '/contenidoVnota\" class\=\"txtVitrina\"\>(.*?)\<div id\=\"clearposition\"/si';
+  		// preg_match($patron, $htmlResultPage, $contenidoNoticia2);
 		
 		$patron = '/Internal Server/si';
 		preg_match($patron, $tituloNoticia, $chequeo);
@@ -83,24 +83,34 @@ set_time_limit (90);
 		if ($chequeo)
 			exit;
 		
-		if ($contenidoNoticia2)
-			$contenidoNoticia2 = strip_tags($contenidoNoticia2[1], '<br></br></ br><iframe></iframe><p></p><object></object><param></param>');
+		// if ($contenidoNoticia2)
+		// $contenidoNoticia2 = strip_tags($contenidoNoticia2[1], '<br></br></ br><iframe></iframe><p></p><object></object><param></param>');
 		$contenidoNoticia = strip_tags($contenidoNoticia[1], '<br></br></ br><iframe></iframe><p></p><object></object><param></param>');
 		
-		if($contenidoNoticia2)
-			$contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
+		// if($contenidoNoticia2)
+		// 	$contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
 		
-		if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-			exit;
+		// if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
+		// 	exit;
+
 		
-		$pattern = '/\<div class\=\"cajon-imagen\"\>(.*?)\<\/div\>/si';
+		$pattern = '/\<figure class\=\"foto_principal\"(.*?)\<\/figure\>/si';
 		preg_match($pattern, $htmlResultPage, $imagenes);
 		
 		if($imagenes){	
-			$pattern = '/(?<=\<img src\=\")[^\"]+/';
+			$pattern = '/(?<=\<img itemprop\=\"image\" itemprop\=\"contentUrl\" src\=\")[^\"]+/';
 			preg_match($pattern, $imagenes[0], $imagenes);
 		}
-		
+
+		echo "Url: " . $urlNoticia;
+		echo "Titulo " . $tituloNoticia;
+   		echo "Categoria: ";
+   		echo  $categoriaNoticia . "\n";
+   		echo "nombFile: " . $nombFile;
+   		echo "Contenido: " . $contenidoNoticia;
+   		echo "Imagenes ";
+   		print_r($imagenes);
+		/*
 		if ($imagenes) {
 			$fecha = date("dmY");
 			$rutArchivo = getcwd();
