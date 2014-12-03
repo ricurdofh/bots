@@ -4,24 +4,25 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://www.noticiascaracol.com/';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotCaracol.txt';
+    $URL = 'http://www.elpais.com.co/elpais/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotElPais.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.noticiascaracol.com/');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.elpais.com.co/elpais/');
         
-        $pattern = '/data\-rel\=\"publisher\"\>\<\/div\>(.*?)\<div class\=\"region region\-b\"\>/si';
+        $pattern = '/\<div id\=\"block\-views\-home\_lo\_mas\_reciente\-block\_1\"(.*?)\<div id\=\"block\-ad/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
             break;
     }
     
-    $patron = '/(?<=\<h2 class\=\"note\"\>\<a href\=\")[^\"]+/si';
+    $patron = '/(?<=\<a href\=\")[^\"]+/si';
     preg_match_all($patron, $noticias[0], $urlNoticias);
+
             
     $cont = 1;
     $max = 4;
@@ -29,7 +30,7 @@ set_time_limit (90);
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-        $urlNoticia = 'http://www.noticiascaracol.com' . $urlNoticia;
+        $urlNoticia = 'http://www.elpais.com.co' . $urlNoticia;
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
@@ -54,22 +55,28 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<div class\=\"body\"\>(.*?)\<h2 class\=\"field\-label\"\>/si';
+        $patron = '/\<\!\-\-fin de paute facil\-\-\>(.*?)\<div id\=\"pauta\_Hipertexto\_DespliegueDeNoticias\_1\"/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
+        $patron = '/\<\!\-\-barra derecha\-\-\>(.*?)\<div id\=\"pauta\_Hipertexto\_DespliegueDeNoticias\_1\"/si';
+        preg_match($patron, $contenidoNoticia[0], $contenidoNoticia);
+        $patron = '/\<p\>(.*?)\<div id\=\"pauta\_Hipertexto\_DespliegueDeNoticias\_1\"/si';
+        preg_match($patron, $contenidoNoticia[0], $contenidoNoticia);
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/class\=\"active\"\>(.*?)\<\/a\>/si';
-        preg_match($patron, $htmlResultPage, $categoriaNoticia);
+        // $patron = '/class\=\"active\"\>(.*?)\<\/a\>/si';
+        // preg_match($patron, $htmlResultPage, $categoriaNoticia);
+        $patron = '/.co\/elpais\/.*\//si';
+        preg_match($patron, $urlNoticia, $categoriaNoticia);
         print_r($categoriaNoticia);
 
-        $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
+        $categoriaNoticia = asignaCategoria($categoriaNoticia[0]);
         
         //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('| Noticias Caracol', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+        $tituloNoticia = str_replace('- diario El Pais', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
         
@@ -93,11 +100,11 @@ set_time_limit (90);
         //  exit;
 
         
-        $pattern = '/\<div class\=\"image\"\>(.*?)\<\/div\>/si';
+        $pattern = '/\<div id\=\'foto\_nota\'(.*?)\<\/p\>\<\/div\>\<\/div\>/si';
         preg_match($pattern, $htmlResultPage, $imagenes);
         
         if($imagenes){  
-            $pattern = '/(?<=\<span data\-src\=\")[^\"]+/';
+            $pattern = '/(?<=\<img src\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
@@ -199,7 +206,7 @@ set_time_limit (90);
     
     function asignaCategoria($stringCategoria)
     {
-        $patron = '/NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|COLOMBIA/';
+        $patron = '/NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|colombia|antioquia|valle/';
         preg_match($patron, $stringCategoria, $categoria);
         if($categoria)
             $categoria = '1';
