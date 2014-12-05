@@ -71,23 +71,23 @@ jsdom.env({
                     Games.findOne({
                         league : teamsArray[cont].league, 
                         date : teamsArray[cont].date, 
-                        team1 : teamsArray[cont].team1}, 
-                        function (err, game) {
-                            var data = teamsArray[localCont];
+                        team1 : teamsArray[cont].team1
+                    }, function (err, game) {
+                        var data = teamsArray[localCont];
 
-                            if(!game) {
-                                game = new Games({
-                                    league : data.league,
-                                    date : data.date 
-                                });                                        
-                            }
+                        if(!game) {
+                            game = new Games({
+                                league : data.league,
+                                date : data.date 
+                            });                                        
+                        }
 
-                            game = addData(game, data.team1, data.totalPoints1, data.periodPoints1, 1, $, data.time);
+                        game = addData(game, data.team1, data.totalPoints1, data.periodPoints1, 1, $, data.time);
 
-                            game = addData(game, data.team2, data.totalPoints2, data.periodPoints2, 2, $);
+                        game = addData(game, data.team2, data.totalPoints2, data.periodPoints2, 2, $);
 
-                            game.save();
-                        });
+                        game.save();
+                    });
                     cont += 1;
                 }
             });
