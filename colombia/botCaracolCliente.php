@@ -4,23 +4,23 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://www.semana.com/';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotSemana.txt';
+    $URL = 'http://www.noticiascaracol.com/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotCaracol.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.semana.com/');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.noticiascaracol.com/');
         
-        $pattern = '/\<div class\=\"row articles\"\>(.*?)\<div class\=\"panel widget opinion\"\>/si';
+        $pattern = '/data\-rel\=\"publisher\"\>\<\/div\>(.*?)\<div class\=\"region region\-b\"\>/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
             break;
     }
     
-    $patron = '/(?<=\<h3 class\=\"meta\"\>\<a href\=\")[^\"]+/si';
+    $patron = '/(?<=\<h2 class\=\"note\"\>\<a href\=\")[^\"]+/si';
     preg_match_all($patron, $noticias[0], $urlNoticias);
             
     $cont = 1;
@@ -29,12 +29,12 @@ set_time_limit (90);
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-        $urlNoticia = 'http://www.semana.com' . $urlNoticia;
+        $urlNoticia = 'http://www.noticiascaracol.com' . $urlNoticia;
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
             agregaNoticia($urlNoticia, '', $agentBrowser, $BOT_BROWSER_COOKIES, $URL);
-            break;
+            // break;
         }
         
         $cont ++;
@@ -54,22 +54,24 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<div class\=\"item\-text\" itemprop\=\"articleBody\"\>(.*?)\<\!\-\- Noticias Relacionad\<as \-\-\>/si';
+        $patron = '/\<div class\=\"body\"\>(.*?)\<h2 class\=\"field\-label\"\>/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
+
+        if (!$contenidoNoticia)
+            exit;
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/activeSection\(\"(.*?)\"\)\;/si';
+        $patron = '/class\=\"active\"\>(.*?)\<\/a\>/si';
         preg_match($patron, $htmlResultPage, $categoriaNoticia);
-        print_r($categoriaNoticia);
 
         $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
         
         //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('- Semana.com', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+        $tituloNoticia = str_replace('| Noticias Caracol', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
         
@@ -89,27 +91,19 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+            exit;
 
         
-        $pattern = '/\<div class\=\"carousel\"\>(.*?)\<\/div\>/si';
+        $pattern = '/\<div class\=\"image\"\>(.*?)\<\/div\>/si';
         preg_match($pattern, $htmlResultPage, $imagenes);
         
         if($imagenes){  
-            $pattern = '/(?<=class\=\"article\-image\" src\=\")[^\"]+/';
+            $pattern = '/(?<=\<span data\-src\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia . "\n";
-        echo "Titulo " . $tituloNoticia . "\n";
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile . "\n";
-        echo "Contenido: " . $contenidoNoticia . "\n";
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
+        
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
@@ -168,6 +162,9 @@ set_time_limit (90);
            "rutArchivo" => $rutArchivo,
            "botId" => "19"
         );
+
+        var_dump($data);
+        exit;
         
         $fields = '';
         foreach($data as $key => $value) {

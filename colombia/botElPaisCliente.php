@@ -70,7 +70,6 @@ set_time_limit (90);
         // preg_match($patron, $htmlResultPage, $categoriaNoticia);
         $patron = '/.co\/elpais\/.*\//si';
         preg_match($patron, $urlNoticia, $categoriaNoticia);
-        print_r($categoriaNoticia);
 
         $categoriaNoticia = asignaCategoria($categoriaNoticia[0]);
         
@@ -96,8 +95,8 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+         exit;
 
         
         $pattern = '/\<div id\=\'foto\_nota\'(.*?)\<\/p\>\<\/div\>\<\/div\>/si';
@@ -108,15 +107,6 @@ set_time_limit (90);
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia . "\n";
-        echo "Titulo " . $tituloNoticia . "\n";
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile . "\n";
-        echo "Contenido: " . $contenidoNoticia . "\n";
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
@@ -176,6 +166,9 @@ set_time_limit (90);
            "botId" => "19"
         );
         
+        var_dump($data);
+        exit;
+        
         $fields = '';
         foreach($data as $key => $value) {
             $fields .= $key . '=' . $value . '&'; 
@@ -206,7 +199,7 @@ set_time_limit (90);
     
     function asignaCategoria($stringCategoria)
     {
-        $patron = '/NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|colombia|antioquia|valle/';
+        $patron = '/NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|judicial|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|colombia|antioquia|valle/';
         preg_match($patron, $stringCategoria, $categoria);
         if($categoria)
             $categoria = '1';

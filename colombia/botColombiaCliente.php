@@ -4,24 +4,25 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://www.elespectador.com/noticias';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotElEspectador.txt';
+    $URL = 'http://www.colombia.com/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotColombia.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.elespectador.com/noticias');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.colombia.com/');
         
-        $pattern = '/\<div id\=\"ultimas\_noticias\"(.*?)\<\/div\>\<div class\=\"block-actividad\"\>/si';
+        $pattern = '/\<div class="tTitularesH">(.*?)\<div class\=\"bNoticias\"\>/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
             break;
     }
-
-    $patron = '/\<a class\=\"seccion\"(.*?)<div class="node-share share">/si';
+    
+    $patron = '/(?<=\<a href\=\")[^\"]+/si';
     preg_match_all($patron, $noticias[0], $urlNoticias);
+
             
     $cont = 1;
     $max = 4;
@@ -29,11 +30,7 @@ set_time_limit (90);
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-
-        $patron = '/(?<=\<a href\=\")[^\"]+/si';
-        preg_match($patron, $urlNoticia, $urlNoticia);
-        
-        $urlNoticia = 'http://www.elespectador.com/' . $urlNoticia[0];
+        $urlNoticia = 'http://www.colombia.com' . $urlNoticia;
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
@@ -58,21 +55,24 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<div class\=\"content\_nota\"\>(.*?)\<div class\=\"clear\"\>\<\/div\>/si';
+        $patron = '/\<div class\=\"detalle\" itemprop\=\"articleBody\"\>(.*?)\<div class\=\"cl pad\"\>\<\/div\>/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/\<body class\=\" articulo(.*?)\"\>/si';
+        // $patron = '/class\=\"active\"\>(.*?)\<\/a\>/si';
+        // preg_match($patron, $htmlResultPage, $categoriaNoticia);
+        $patron = '/\<span itemprop\=\"articleSection\"(.*?)\<\/span\>/si';
         preg_match($patron, $htmlResultPage, $categoriaNoticia);
 
-        $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
+        $categoriaNoticia = asignaCategoria($categoriaNoticia[0]);
         
         //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('| ELESPECTADOR.COM', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+        $tituloNoticia = str_replace('- Colombia.com', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+        $tituloNoticia = preg_replace('/-.*/ ', '', trim(htmlspecialchars_decode($tituloNoticia)));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
         
@@ -92,34 +92,26 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+         exit;
 
         
-        $pattern = '/\<div class\=\"imagen_noticia\"\>(.*?)\<\/span\>/si';
+        $pattern = '/\<img itemprop\=\"image\"(.*?)\/\>/si';
         preg_match($pattern, $htmlResultPage, $imagenes);
         
         if($imagenes){  
-            $pattern = '/(?<=data\-original\=\")[^\"]+/';
+            $pattern = '/(?<=src\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia . "\n";
-        echo "Titulo " . $tituloNoticia . "\n";
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile . "\n";
-        echo "Contenido: " . $contenidoNoticia . "\n";
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
+        
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
             
             $img = $rutArchivo . '/' .  $nombFile . '.jpg';
             
-             $ch = curl_init("http://www.elespectador.com".$imagenes[0]);
+             $ch = curl_init($imagenes[0]);
              $fp = fopen($img, 'wb');
              curl_setopt($ch, CURLOPT_FILE, $fp);
              //curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -171,6 +163,9 @@ set_time_limit (90);
            "rutArchivo" => $rutArchivo,
            "botId" => "19"
         );
+
+        var_dump($data);
+        exit;
         
         $fields = '';
         foreach($data as $key => $value) {
@@ -202,7 +197,7 @@ set_time_limit (90);
     
     function asignaCategoria($stringCategoria)
     {
-        $patron = '/POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|COLOMBIA/';
+        $patron = '/NACIÓN|NACION|Naci|naci|naci|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|bogot&Aacute;|colombia|antioquia/';
         preg_match($patron, $stringCategoria, $categoria);
         if($categoria)
             $categoria = '1';

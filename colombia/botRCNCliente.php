@@ -63,7 +63,6 @@ set_time_limit (90);
         
         $patron = '/.com\/.*\//si';
         preg_match($patron, $urlNoticia, $categoriaNoticia);
-        print_r($categoriaNoticia);
 
         $categoriaNoticia = asignaCategoria($categoriaNoticia[0]);
         
@@ -90,8 +89,8 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+         exit;
 
         
         $pattern = '/\<div id\=\"tipo-imagen\"\>(.*?)\<div class\=\"foto\-desc\"\>/si';
@@ -102,15 +101,6 @@ set_time_limit (90);
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia;
-        echo "Titulo " . $tituloNoticia;
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile;
-        echo "Contenido: " . $contenidoNoticia;
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
@@ -169,6 +159,9 @@ set_time_limit (90);
            "rutArchivo" => $rutArchivo,
            "botId" => "19"
         );
+        
+        var_dump($data);
+        exit;
         
         $fields = '';
         foreach($data as $key => $value) {
