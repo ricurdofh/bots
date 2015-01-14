@@ -4,16 +4,16 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://peru21.pe/';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotPeru21.txt';
+    $URL = 'http://peru.com/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotPeru.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://peru21.pe/');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://peru.com/');
         
-        $pattern = '/\<div class\=\"box\" id\=\"ultimas\-not\"\>(.*?)\<div class\=\"box box\-cartelera\"\>/si';
+        $pattern = '/\<div id\=\"titulares\"\>(.*?)\<div class\=\"clear\"\>\<\/div\>/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
@@ -29,7 +29,9 @@ set_time_limit (90);
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-        $urlNoticia = 'http://peru21.pe' . $urlNoticia;
+        // $urlNoticia = 'http://peru21.pe' . $urlNoticia;
+        if(!preg_match('/http\:\/\/peru\.com\//', $urlNoticia))
+            break;
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
@@ -54,23 +56,21 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<div class\=\"nota\-detalle\"(.*?)\<div class\=\"nota\-tags tags\-gal\"\>/si';
+        $patron = '/\<div id\=\"nota\_body\" itemprop\=\"articleBody\"\>(.*?)\<div class\=\"tags\"\>/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/\<meta property\=\"article\:section\" content\=\"(.*?)\" \/\>/si';
+        $patron = '/\<body id\=\"(.*?)\"/si';
         preg_match($patron, $htmlResultPage, $categoriaNoticia);
-        print_r($categoriaNoticia);
 
         $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
         
         //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('| Peru21', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
-        $tituloNoticia = preg_replace('/\|.*/ ', '', trim(htmlspecialchars_decode($tituloNoticia)));
+        $tituloNoticia = str_replace('| Peru', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
         
@@ -90,27 +90,18 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+         exit;
 
         
-        $pattern = '/\<div class\=\"foto\-main\"(.*?)\<div class\=\"legend\"\>/si';
+        $pattern = '/\<img itemprop\=\"image\"(.*?)\<\/figure\>/si';
         preg_match($pattern, $htmlResultPage, $imagenes);
         
         if($imagenes){  
-            $pattern = '/(?<=\<img src\=\")[^\"]+/';
+            $pattern = '/(?<=src\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia . "\n";
-        echo "Titulo " . $tituloNoticia . "\n";
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile . "\n";
-        echo "Contenido: " . $contenidoNoticia . "\n";
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
@@ -170,6 +161,9 @@ set_time_limit (90);
            "botId" => "19"
         );
         
+        var_dump($data);
+        exit;
+        
         $fields = '';
         foreach($data as $key => $value) {
             $fields .= $key . '=' . $value . '&'; 
@@ -218,7 +212,7 @@ set_time_limit (90);
                     $categoria = '4';
                 else
                 {
-                    $patron = '/deportes|Deportes|DEPORTES/';
+                    $patron = '/deportes|Deportes|DEPORTES|futbol/';
                     preg_match($patron, $stringCategoria, $categoria);
                     if($categoria)
                         $categoria = '5';

@@ -4,32 +4,36 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://www.rpp.com.pe/';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotRPP.txt';
+    $URL = 'http://www.larepublica.pe/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotLaRepublica.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.rpp.com.pe/');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://www.larepublica.pe/');
         
-        $pattern = '/\<ul class\=\"ul\_ultimas\"\>(.*?)\<a href\=\"ultimas\-noticias\.html\"  class\=\"btn\_mas\-seccion\"\>/si';
+        $pattern = '/id\=\"glr\_section\_list\"\>(.*?)\<div class\=\"glr\-block glr\-mb\-10\"\>/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
             break;
     }
     
-    $patron = '/(?<=href\=\")[^\"]+/si';
+    $patron = '/\<div class\=\"glr\-block glr\-list\-item-photo\"\>(.*?)\<\/div\>/si';
     preg_match_all($patron, $noticias[0], $urlNoticias);
-            
+          
     $cont = 1;
     $max = 4;
 
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-        $urlNoticia = 'http://www.rpp.com.pe/' . $urlNoticia;
+
+        $patron = '/(?<=\<a href\=\")[^\"]+/si';
+        preg_match($patron, $urlNoticia, $urlNoticia);
+
+        $urlNoticia = 'http://www.larepublica.pe' . $urlNoticia[0];
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
@@ -54,26 +58,21 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<div class=\"nquote display\_off\"\>(.*?)\<div class\=\"box\_ndetalle\-bottom \" \>/si';
+        $patron = '/\<div class\=\"glr\-post\-drop\"\>(.*?)\<div class\=\"post\-tags\"\>/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/\<ul class\=\"ul\_menu\-breadcrumb\"\>(.*?)\<\/div\>/si';
+        $patron = '/\<meta property\=\"article\:section\" content\=\"(.*?)\" \/\>/si';
         preg_match($patron, $htmlResultPage, $categoriaNoticia);
-        $patron = '/\<li\>(.*?)\<\/li\>/si';
-        preg_match_all($patron, $categoriaNoticia[0], $categoriaNoticia);
-        $patron = '/\<a(.*?)\<\/span\>/si';
-        preg_match($patron, $categoriaNoticia[0][count($categoriaNoticia[0]) - 1], $categoriaNoticia);
-        print_r($categoriaNoticia);
 
         $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
         
         //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('| RPP NOTICIAS', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+        $tituloNoticia = str_replace('| LaRepublica.pe', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
         
@@ -93,27 +92,18 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+         exit;
 
         
-        $pattern = '/\<div class\=\"box\_multimedia"\ \>(.*?)\<\/div\>/si';
+        $pattern = '/\<div class\=\"glr\-slider\-item\-mm\"\>(.*?)\<\/div\>/si';
         preg_match($pattern, $htmlResultPage, $imagenes);
         
         if($imagenes){  
-            $pattern = '/(?<=\<img src\=\')[^\']+/';
+            $pattern = '/(?<=src\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia . "\n";
-        echo "Titulo " . $tituloNoticia . "\n";
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile . "\n";
-        echo "Contenido: " . $contenidoNoticia . "\n";
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
@@ -173,6 +163,9 @@ set_time_limit (90);
            "botId" => "19"
         );
         
+        var_dump($data);
+        exit;
+        
         $fields = '';
         foreach($data as $key => $value) {
             $fields .= $key . '=' . $value . '&'; 
@@ -203,7 +196,7 @@ set_time_limit (90);
     
     function asignaCategoria($stringCategoria)
     {
-        $patron = '/NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|lima|LIMA|Lima/';
+        $patron = '/Sociedad|SOCIEDAD|sociedad|NACIÓN|NACION|POL&Iacute;TICA|La naci|LA NACI|La Naci|Editorial|Opini|Sucesos|SUCESOS|OPINION|Educaci|EDUCACI|En Campa|EN CAMPA|Ambiente|AMBIENTE|Poder|Popular|Poder Popular|Política|Politica|Gesti|Social|Gestión|Regiones|Region|lima|LIMA|Lima/';
         preg_match($patron, $stringCategoria, $categoria);
         if($categoria)
             $categoria = '1';
@@ -227,7 +220,7 @@ set_time_limit (90);
                         $categoria = '5';
                     else
                     {
-                        $patron = '/TECN&Oacute;SFERA|TECNOLOG|Tecnolog|tecnolog|ciencia|Ciencia/';
+                        $patron = '/TECN&Oacute;SFERA|TECNOLOG|Tecnolog|tecnolog/';
                         preg_match($patron, $stringCategoria, $categoria);
                         if($categoria)
                             $categoria = '7';

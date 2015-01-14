@@ -4,23 +4,23 @@ set_time_limit (90);
 
     include_once('funcionesCliente.php');
     $agentBrowser = CargaBrowserUserAgent(); //funcion carga un browser user agent valido
-    $URL = 'http://gestion.pe/archivo';
-    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotDePeru.txt';
+    $URL = 'http://elcomercio.pe/';
+    $BOT_BROWSER_COOKIES = dirname(__FILE__).'/BotElComercio.txt';
     for ($w=1; $w<7; $w++)
     {
         if ($w > 5)
             exit ('No pude cargar la URL : ' . $URL . ' puede ser un cambio en el diseño o errores de servidor ' . $htmlResultPage);
             
-        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'hhttp://gestion.pe/');
+        $htmlResultPage = EjecutaCurl($URL, $agentBrowser, $BOT_BROWSER_COOKIES, 'http://elcomercio.pe/');
         
-        $pattern = '/\<div class\=\"resultados\"\>(.*?)\<\/div\>\<\!\-\- FIN RESULTADOS \-\-\>/si';
+        $pattern = '/\<section id\=\"ec\-ultimas\"(.*?)\<article class\=\"ec\-fg\-flujos\"\>/si';
         preg_match($pattern, $htmlResultPage, $noticias);
         
         if ($noticias)
             break;
     }
     
-    $patron = '/(?<=\<h1\>\<a href\=\")[^\"]+/si';
+    $patron = '/(?<=\<h2\>\<a href\=\")[^\"]+/si';
     preg_match_all($patron, $noticias[0], $urlNoticias);
             
     $cont = 1;
@@ -29,11 +29,10 @@ set_time_limit (90);
     foreach ($urlNoticias[0] as $k=>$urlNoticia) {
         if ($cont > $max)
             break;
-        $urlNoticia = 'http://gestion.pe' . $urlNoticia;
+        // $urlNoticia = 'http://www.noticiascaracol.com' . $urlNoticia;
         
         if (noticiaDuplicada($urlNoticia, 19))
         {
-            echo "urlNoticia " . $urlNoticia . "\n";
             agregaNoticia($urlNoticia, '', $agentBrowser, $BOT_BROWSER_COOKIES, $URL);
             break;
         }
@@ -55,28 +54,21 @@ set_time_limit (90);
                 break;
         }
         
-        $patron = '/\<p class\=\"bajada\"\>(.*?)\<div class\=\"tags\"\>/si';
+        $patron = '/\<div class\=\"nota\-texto\"(.*?)\<div class\=\"nota\-tags\"\>/si';
         preg_match($patron, $htmlResultPage, $contenidoNoticia);
-        
-        $pattern = '/\<figure\>(.*?)\<\/figure\>/si';
-        preg_match($pattern, $contenidoNoticia[1], $imagenes);
-
-        $patron = '/\<div class\=\"post-detalle notatext right\"\>(.*?)\<div class\=\"tags\"\>/si';
-        preg_match($patron, $contenidoNoticia[0], $contenidoNoticia);
         
         $fechaNoticia = date("Y-m-d");
         $horaNoticia = date("h:i A");
         $horaNoticiaGmt = date("H:i:s");
         
-        $patron = '/\<meta property\=\"article\:section\" content\=\"(.*?)\" \/\>/si';
-        preg_match($patron, $htmlResultPage, $categoriaNoticia);        
-        print_r($categoriaNoticia);
+        $patron = '/\<meta property\=\"article\:section\" content\=\"(.*?)\"\/\>/si';
+        preg_match($patron, $htmlResultPage, $categoriaNoticia);
 
-        $categoriaNoticia = asignaCategoria($categoriaNoticia[0]);
+        $categoriaNoticia = asignaCategoria($categoriaNoticia[1]);
         
         //$categoriaNoticia = 1;
         
-        $tituloNoticia = str_replace('| Gestion.pe', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
+        $tituloNoticia = str_replace('| El Comercio Peru', '', trim(htmlspecialchars_decode($tituloNoticia[0])));
         $tituloNoticia = preg_replace('/\|.*/ ', '', trim(htmlspecialchars_decode($tituloNoticia)));
         
         $nombFile = preg_replace('/[^a-z0-9 _-]/', '', sanitize(sanear_string(limpiaHtml($tituloNoticia))));
@@ -97,24 +89,18 @@ set_time_limit (90);
         // if($contenidoNoticia2)
         //  $contenidoNoticia = $contenidoNoticia . ' ' . $contenidoNoticia2[0];
         
-        // if((strlen($contenidoNoticia2)<25) || (strpos($contenidoNoticia2, 'sexo') !== false) || (strpos($contenidoNoticia2, 'sexual') !== false) || (strpos($contenidoNoticia2, 'aborto') !== false))
-        //  exit;
+        if((strlen($contenidoNoticia)<25) || (strpos($contenidoNoticia, 'sexo') !== false) || (strpos($contenidoNoticia, 'sexual') !== false) || (strpos($contenidoNoticia, 'aborto') !== false))
+         exit;
 
         
+        $pattern = '/\<link rel\=\"image\_src\" href\=\"(.*?)\" \/\>/si';
+        preg_match($pattern, $htmlResultPage, $imagenes);
+        
         if($imagenes){  
-            $pattern = '/(?<=src\=\")[^\"]+/';
+            $pattern = '/(?<=href\=\")[^\"]+/';
             preg_match($pattern, $imagenes[0], $imagenes);
         }
 
-        echo "Url: " . $urlNoticia . "\n";
-        echo "Titulo " . $tituloNoticia . "\n";
-        echo "Categoria: ";
-        echo  $categoriaNoticia . "\n";
-        echo "nombFile: " . $nombFile . "\n";
-        echo "Contenido: " . $contenidoNoticia . "\n";
-        echo "Imagenes ";
-        print_r($imagenes);
-        /*
         if ($imagenes) {
             $fecha = date("dmY");
             $rutArchivo = getcwd();
@@ -174,6 +160,9 @@ set_time_limit (90);
            "botId" => "19"
         );
         
+        var_dump($data);
+        exit;
+        
         $fields = '';
         foreach($data as $key => $value) {
             $fields .= $key . '=' . $value . '&'; 
@@ -210,7 +199,7 @@ set_time_limit (90);
             $categoria = '1';
         else 
         {
-            $patron = '/Mercados|mercados|econom|Econom|ECONOM/';
+            $patron = '/econom|Econom|ECONOM/';
             preg_match($patron, $stringCategoria, $categoria);
             if($categoria)
                 $categoria = '3';
